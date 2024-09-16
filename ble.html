@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mugic BLE Configurator</title>
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs/dist/protobuf.min.js"></script>
+</head>
+<body>
+    <h1>Mugic BLE Configurator</h1>
+    <button id="connectBtn">Connect to Mugic Device</button>
+
+    <div id="commandDiv" style="display: none;">
+        <h2>Send Commands</h2>
+
+        <!-- Set Output Mode -->
+        <!-- <h3>Set Output Mode</h3>
+        <select id="outputMode">
+            <option value="0">SERIAL_MODE</option>
+            <option value="1">WIFI_AP_MODE</option>
+            <option value="2">WIFI_CLIENT_MODE</option>
+            <option value="3">BLE_MODE</option>
+            <option value="-1">UNSPECIFIED_MODE</option>
+        </select>
+        <button onclick="sendSetOutputMode()">Send</button><br><br> -->
+
+        <!-- Configure WiFi AP -->
+        <h3>Configure WiFi AP</h3>
+        <input type="text" id="wifiApSsid" placeholder="AP SSID">
+        <input type="text" id="wifiApPassword" placeholder="AP Password">
+        <input type="number" id="wifiApPort" placeholder="Port">
+        <button onclick="sendConfigureWifiAp()">Send</button><br><br>
+
+        <!-- Configure WiFi Client -->
+        <h3>Configure WiFi Client</h3>
+        <input type="text" id="wifiClientSsid" placeholder="Wifi SSID">
+        <input type="text" id="wifiClientPassword" placeholder="Wifi Password">
+        <input type="number" id="wifiClientPort" placeholder="Port">
+        <button onclick="sendConfigureWifiClient()">Send</button><br><br>
+
+        <!-- Configure BLE -->
+        <h3>Configure BLE</h3>
+        <input type="text" id="bleName" placeholder="BLE Name">
+        <button onclick="sendConfigureBle()">Send</button><br><br>
+
+        <!-- Get Diagnostics -->
+        <!-- <h3>Get Diagnostics</h3>
+        <button onclick="sendGetDiagnostics()">Send</button><br><br> -->
+
+        <!-- Get Configuration -->
+        <h3>Get Assigned IP</h3>
+        <input type="text" id="assignedIp" placeholder="No Assigned IP" readonly>
+        <button onclick="sendGetAssignedIP()">Check IP</button><br><br>
+
+        <!-- Configure Client IP -->
+        <h3>Configure Client IP</h3>
+        <input type="text" id="clientIp0" placeholder="IP 0">
+        <input type="text" id="clientIp1" placeholder="IP 1">
+        <input type="text" id="clientIp2" placeholder="IP 2">
+        <input type="text" id="clientIp3" placeholder="IP 3">
+        <input type="text" id="clientIp4" placeholder="IP 4">
+        <input type="text" id="clientIp5" placeholder="IP 5">
+        <input type="text" id="clientIp6" placeholder="IP 6">
+        <input type="text" id="clientIp7" placeholder="IP 7">
+        <button onclick="sendConfigureClientIp()">Send</button><br><br>
+
+        <!-- Set Output Frequency -->
+        <h3>Set Output Frequency</h3>
+        <input type="number" id="outputFrequency" placeholder="Frequency (ms)">
+        <button onclick="sendSetOutputFrequency()">Send</button><br><br>
+
+        <!-- Set Output Data Format -->
+        <h3>Set Output Data Format</h3>
+        <select id="outputDataFormat">
+            <option value="0">OSC</option>
+            <option value="1">JSON</option>
+            <option value="3">ASCII</option>
+        </select>
+        <button onclick="sendSetOutputDataFormat()">Send</button><br><br>
+
+    </div>
+
+    <script>
+        let bleDevice;
+        let bleServer;
+        let bleService;
+        let bleCharacteristic;
+
+        // Load the protobuf definition
+        protobuf.load("config_api.proto", function(err, root) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+
+            window.ConfigTaskCommand = root.lookupType("ConfigTaskCommand");
+            window.ConfigTaskResponse = root.lookupType("ConfigTaskResponse");
+            window.TaskState = root.lookupType("ConfigTaskResponse");
+
+        });
+
+        document.getElementById("connectBtn").addEventListener("click", async function() {
+            try {
+                const serviceUuid = 0x5501;
+                const characteristicUuid = 0x113a;
+                
+                if (!navigator.bluetooth) {
+                    alert('Your browser does not support Web Bluetooth!');
+                    return;
+                }
+
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'mu' }],
+                    optionalServices: [serviceUuid] 
+                });
+
+
+
+                gattServer = await bleDevice.gatt.connect();
+                service = await gattServer.getPrimaryService(serviceUuid); 
+                characteristic = await service.getCharacteristic(characteristicUuid);
+
+                // Start notifications
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+                document.getElementById("commandDiv").style.display = "block";
+                //get configuration to prepopulate boxes
+                const command = ConfigTaskCommand.create({
+                    getConfiguration: {} 
+                });
+                const buffer = ConfigTaskCommand.encode(command).finish();
+                try {
+                await characteristic.writeValue(buffer);
+                console.log("Command sent:", command);
+                } catch (error) {
+                    console.error("Failed to send command", error);
+                }
+
+            } catch (error) {
+                console.error("Connection failed", error);
+            }
+        });
+
+        async function sendCommand(command) {
+            const buffer = ConfigTaskCommand.encode(command).finish();
+            try {
+                await characteristic.writeValue(buffer);
+                console.log("Command sent:", command);
+            } catch (error) {
+                console.error("Failed to send command", error);
+            }
+        }
+
+        function sendSetOutputDataFormat() {
+            const outputDataFormat = parseInt(document.getElementById('outputDataFormat').value);
+            const command = ConfigTaskCommand.create({
+                    setOutputDataFormat: { outputDataFormat: outputDataFormat }
+            });
+            sendCommand(command);
+        }
+
+        function sendSetOutputFrequency() {
+            const frequency = parseInt(document.getElementById('outputFrequency').value);
+            const command = ConfigTaskCommand.create({
+                setOutputFrequency: { frequency: frequency } 
+            });
+            sendCommand(command);
+        }
+
+        // function sendSetOutputMode() {
+        //     const outputDataMode = parseInt(document.getElementById('outputMode').value);
+        //     const command = ConfigTaskCommand.create({
+        //         command: {
+        //             set_output_mode: SetOutputMode.create({ output_data_mode: outputDataMode })
+        //         }
+        //     });
+        //     sendCommand(command);
+        // }
+
+        function sendConfigureWifiAp() {
+            const ssid = document.getElementById('wifiApSsid').value;
+            const password = document.getElementById('wifiApPassword').value;
+            const port = parseInt(document.getElementById('wifiApPort').value);
+            const command = ConfigTaskCommand.create({
+                configureWifiAp: { ssid: ssid, password: password, port: port }
+            });
+            sendCommand(command);
+        }
+
+        function sendConfigureWifiClient() {
+            const ssid = document.getElementById('wifiClientSsid').value;
+            const password = document.getElementById('wifiClientPassword').value;
+            const port = parseInt(document.getElementById('wifiClientPort').value);
+            const command = ConfigTaskCommand.create({
+                configureWifiClient: { ssid: ssid, password: password, port: port }
+            });
+            sendCommand(command);
+        }
+
+        function sendConfigureBle() {
+            const bleName = document.getElementById('bleName').value;
+            const command = ConfigTaskCommand.create({
+                configureBle: { bleName: bleName }
+            });
+            sendCommand(command);
+        }
+
+        function sendConfigureClientIp() {
+            const ip0 = document.getElementById('clientIp0').value;
+            const ip1 = document.getElementById('clientIp1').value;
+            const ip2 = document.getElementById('clientIp2').value;
+            const ip3 = document.getElementById('clientIp3').value;
+            const ip4 = document.getElementById('clientIp4').value;
+            const ip5 = document.getElementById('clientIp5').value;
+            const ip6 = document.getElementById('clientIp6').value;
+            const ip7 = document.getElementById('clientIp7').value;
+            const command = ConfigTaskCommand.create({
+                    configureClientIp: { ip0: ip0, ip1: ip1, ip2: ip2, ip3: ip3, ip4: ip4, ip5: ip5, ip6: ip6, ip7: ip7 }
+            });
+            sendCommand(command);
+        }
+
+        // function sendGetDiagnostics() {
+        //     const command = ConfigTaskCommand.create({
+        //         command: { get_diagnostics: {} }
+        //     });
+        //     sendCommand(command);
+        // }
+
+        // function sendGetConfiguration() {
+        //     const command = ConfigTaskCommand.create({
+        //         command: { get_configuration: {} }
+        //     });
+        //     sendCommand(command);
+        // }
+
+        function sendGetAssignedIP() {
+            const command = ConfigTaskCommand.create({
+                getAssignedIp: {} 
+            });
+            sendCommand(command);
+        }
+
+        // Handle BLE notification
+        async function handleNotifications(event) {
+            const value = event.target.value;
+            const buffer = new Uint8Array(value.buffer);
+
+            // Decode the Protobuf response
+            const decodedResponse = ConfigTaskResponse.decode(buffer);
+            console.log("Received response:", decodedResponse);
+
+            // Show a popup based on the response type
+            displayPopup(decodedResponse);
+        }
+
+         // Function to display a popup based on the ConfigTaskResponse
+         function displayPopup(response) {
+            let taskState;
+
+                // Check for the various responses and extract TaskState
+                if (response.setOutputFrequencyResponse) {
+                    taskState = response.setOutputFrequencyResponse.taskState;
+                } else if (response.configureWifiApResponse) {
+                    taskState = response.configureWifiApResponse.taskState;
+                }  else if (response.configureWifiClientResponse) {
+                    taskState = response.configureWifiClientResponse.taskState;    
+                } else if (response.configureClientIpResponse) {
+                    taskState = response.configureClientIpResponse.taskState;
+                } else if (response.configureBleResponse) {
+                    taskState = response.configureBleResponse.taskState;
+                } else if (response.setOutputDataFormatResponse) {
+                    taskState = response.getAssignedIpResponse.taskState;
+                } else if (response.getAssignedIpResponse) {
+                    if(response.getAssignedIpResponse.ip === undefined || response.getAssignedIpResponse.ip.trim() === ''){
+                        return;
+                    }
+                    document.getElementById('assignedIp').value = response.getAssignedIpResponse.ip;
+                    return;
+                } else if (response.getConfigurationResponse) {
+                    document.getElementById('outputFrequency').value = response.getConfigurationResponse.frequency;
+                    document.getElementById('clientIp7').value = response.getConfigurationResponse.ip7;
+
+                    document.getElementById('wifiApSsid').value = response.getConfigurationResponse.apSsid;
+                    document.getElementById('wifiApPassword').value = response.getConfigurationResponse.apPassword;
+                    document.getElementById('wifiApPort').value = response.getConfigurationResponse.apPort;
+                    
+                    document.getElementById('wifiClientSsid').value = response.getConfigurationResponse.staSsid;
+                    document.getElementById('wifiClientPassword').value = response.getConfigurationResponse.staPassword;
+                    document.getElementById('wifiClientPort').value = response.getConfigurationResponse.staPort;
+                    
+                    document.getElementById('clientIp0').value = response.getConfigurationResponse.ip0;
+                    document.getElementById('clientIp1').value = response.getConfigurationResponse.ip1;
+                    document.getElementById('clientIp2').value = response.getConfigurationResponse.ip2;
+                    document.getElementById('clientIp3').value = response.getConfigurationResponse.ip3;
+                    document.getElementById('clientIp4').value = response.getConfigurationResponse.ip4;
+                    document.getElementById('clientIp5').value = response.getConfigurationResponse.ip5;
+                    document.getElementById('clientIp6').value = response.getConfigurationResponse.ip6;
+                    document.getElementById('clientIp7').value = response.getConfigurationResponse.ip7;
+
+                    document.getElementById('outputDataFormat').value = response.getConfigurationResponse.outputDataFormat;
+                    document.getElementById('bleName').value = response.getConfigurationResponse.bleName;
+                    return;
+                }
+
+            // Check the task state and display appropriate message
+            if (taskState === 0) { // Assuming 0 is TASK_SUCCESS
+                alert("Configuration Accepted!");
+            } else {
+                alert("Error!");
+            }
+        }
+    </script>
+</body>
+</html>
