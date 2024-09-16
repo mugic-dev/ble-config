@@ -1,0 +1,202 @@
+syntax = "proto3";
+package config_api;
+import "nanopb.proto";   
+
+//command message sent from application to device
+message ConfigTaskCommand {
+    oneof command {
+        SetOutputDataFormat set_output_data_format = 1;
+        SetOutputFrequency set_output_frequency = 2;
+        SetOutputMode set_output_mode = 3;
+        ConfigureWifiAp configure_wifi_ap = 4;
+        ConfigureWifiClient configure_wifi_client = 5;
+        ConfigureBle configure_ble = 6;
+        GetDiagnostics get_diagnostics = 7;
+        GetConfiguration get_configuration = 8;
+        ConfigureClientIP configure_client_ip = 9;
+    }
+}
+
+// response message from device to application
+message ConfigTaskResponse {
+    oneof response {
+        SetOutputDataFormatResponse set_output_data_format_response = 1;
+        SetOutputFrequencyResponse set_output_frequency_response = 2;
+        SetOutputModeResponse set_output_mode_response = 3;
+        ConfigureWifiApResponse configure_wifi_ap_response = 4;
+        ConfigureWifiClientResponse configure_wifi_client_response = 5;
+        ConfigureBleResponse configure_ble_response = 6;
+        GetDiagnosticsResponse get_diagnostics_response = 7;
+        GetConfigurationResponse get_configuration_response = 8;
+        ConfigureClientIPResponse configure_client_ip_response = 9;
+    }
+}
+
+//
+// device message enums
+//
+
+enum TaskState {
+    TASK_SUCCESS = 0;
+    TASK_FAILURE = 1;
+    TASK_REJECTED = 2;
+}
+
+enum OutputDataFormat {
+    DATA_OSC = 0;
+    DATA_JSON = 1;
+    DATA_MIDI = 2;
+    DATA_ASCII = 3;
+}
+  
+enum OutputDataMode {
+    SERIAL_MODE = 0;
+    WIFI_MODE = 1;
+    BLE_MODE = 2;
+}
+
+enum OutputStatus {
+    DISABLED_STATUS = 0;
+    CONFIGURED_STATUS = 1;
+    RUNNING_STATUS = 2;
+}
+
+enum MaxStringLength {
+    // First value must be 0 in proto3.
+    UNSPECIFIED_MAX_LENGTH = 0;
+    // Unfortunately, we have to repeat these values below :(
+    IP_ADDRESS_MAX_STRING_LENGTH = 15;
+    SSID_MAX_STRING_LENGTH = 32;
+    PASSWORD_MAX_STRING_LENGTH = 63;
+    BLE_NAME_MAX_STRING_LENGTH = 10;
+}
+
+//
+// Command messages 
+//
+
+message SetOutputDataFormat {
+    OutputDataFormat output_data_format = 1;
+}
+
+message SetOutputFrequency{
+    uint32 frequency = 1;
+}
+
+message SetOutputMode {
+    OutputDataMode output_data_mode = 1;
+}
+
+message ConfigureWifiAp {
+    string ssid = 1 [(nanopb).max_length = 32];
+    string password = 2 [(nanopb).max_length = 63];
+    int32 port = 3;
+}
+
+message ConfigureWifiClient {
+    string ssid = 1 [(nanopb).max_length = 32];
+    string password = 2 [(nanopb).max_length = 63];
+    int32 port = 3;
+}
+
+message ConfigureClientIP {
+    string ip0 = 1 [(nanopb).max_length = 15];
+    string ip1 = 2 [(nanopb).max_length = 15];
+    string ip2 = 3 [(nanopb).max_length = 15];
+    string ip3 = 4 [(nanopb).max_length = 15];
+    string ip4 = 5 [(nanopb).max_length = 15];
+    string ip5 = 6 [(nanopb).max_length = 15];
+    string ip6 = 7 [(nanopb).max_length = 15];
+    string ip7 = 8 [(nanopb).max_length = 15];
+}
+
+message ConfigureBle {
+    string ble_name = 1 [(nanopb).max_length = 10];
+}
+
+message GetClientIPList {}
+
+message GetDiagnostics {}
+
+message GetConfiguration {}
+
+
+//
+// Response messages
+//
+
+message SetOutputDataFormatResponse {
+    TaskState task_state = 1;
+}
+
+message SetOutputFrequencyResponse {
+    TaskState task_state = 1;
+}
+
+message SetOutputModeResponse {
+    TaskState task_state = 1;
+}
+
+message ConfigureWifiApResponse {
+    TaskState task_state = 1;
+}
+
+message ConfigureWifiClientResponse {
+    TaskState task_state = 1;
+}
+
+message ConfigureBleResponse {
+    TaskState task_state = 1;
+}
+
+message GetDiagnosticsResponse {
+    uint32 battery_soc = 1;
+    float battery_volt = 2;
+    uint32 uptime = 3;
+    uint32 bno055_readtime = 4;
+    OutputStatus wifi_status = 5;
+    OutputStatus ble_status = 6;
+    OutputStatus usb_status = 7;
+}
+
+message GetConfigurationResponse {
+    uint32 frequency = 1;
+    OutputDataFormat output_data_format = 2;
+    OutputDataMode output_data_mode = 3;
+
+    string ap_ssid = 4 [(nanopb).max_length = 32];
+    string ap_password = 5 [(nanopb).max_length = 63];
+    int32 ap_port = 6;
+
+    string sta_ssid = 7 [(nanopb).max_length = 32];
+    string sta_password = 8 [(nanopb).max_length = 63];
+    int32 sta_port = 9;
+
+
+    string ip0 = 10 [(nanopb).max_length = 15];
+    string ip1 = 11 [(nanopb).max_length = 15];
+    string ip2 = 12 [(nanopb).max_length = 15];
+    string ip3 = 13 [(nanopb).max_length = 15];
+    string ip4 = 14 [(nanopb).max_length = 15];
+    string ip5 = 15 [(nanopb).max_length = 15];
+    string ip6 = 16 [(nanopb).max_length = 15];
+    string ip7 = 17 [(nanopb).max_length = 15];
+
+    string ble_name = 18 [(nanopb).max_length = 10]; 
+}
+
+message ConfigureClientIPResponse {
+    TaskState task_state = 1;
+}
+
+message GetClientIPListResponse {
+    string ip0 = 1 [(nanopb).max_length = 15];
+    string ip1 = 2 [(nanopb).max_length = 15];
+    string ip2 = 3 [(nanopb).max_length = 15];
+    string ip3 = 4 [(nanopb).max_length = 15];
+    string ip4 = 5 [(nanopb).max_length = 15];
+    string ip5 = 6 [(nanopb).max_length = 15];
+    string ip6 = 7 [(nanopb).max_length = 15];
+    string ip7 = 8 [(nanopb).max_length = 15];
+}
+
