@@ -14,6 +14,7 @@ message ConfigTaskCommand {
         GetDiagnostics get_diagnostics = 7;
         GetConfiguration get_configuration = 8;
         ConfigureClientIP configure_client_ip = 9;
+        GetAssignedIP get_assigned_ip = 10;
     }
 }
 
@@ -29,6 +30,7 @@ message ConfigTaskResponse {
         GetDiagnosticsResponse get_diagnostics_response = 7;
         GetConfigurationResponse get_configuration_response = 8;
         ConfigureClientIPResponse configure_client_ip_response = 9;
+        GetAssignedIPResponse get_assigned_ip_response = 10;
     }
 }
 
@@ -55,10 +57,21 @@ enum OutputDataMode {
     BLE_MODE = 2;
 }
 
-enum OutputStatus {
-    DISABLED_STATUS = 0;
-    CONFIGURED_STATUS = 1;
-    RUNNING_STATUS = 2;
+enum UsbStatus {
+    DISCONNECTED_USB = 0;
+    CONNECTED_USB = 1;
+}
+
+enum WifiStatus {
+    NO_WIFI = 0;
+    STA_WIFI = 1;
+    AP_WIFI = 2;
+}
+
+enum BleStatus {
+    DISCONNECTED_BLE = 0;
+    BROADCASTING_BLE = 1;
+    CONNECTED_BLE = 2;
 }
 
 enum MaxStringLength {
@@ -120,6 +133,8 @@ message GetDiagnostics {}
 
 message GetConfiguration {}
 
+message GetAssignedIP {}
+
 
 //
 // Response messages
@@ -154,9 +169,14 @@ message GetDiagnosticsResponse {
     float battery_volt = 2;
     uint32 uptime = 3;
     uint32 bno055_readtime = 4;
-    OutputStatus wifi_status = 5;
-    OutputStatus ble_status = 6;
-    OutputStatus usb_status = 7;
+    uint32 upd_sendtime = 5;
+    uint32 data_looptime = 6;
+    uint32 udp_err_count = 7;
+    WifiStatus wifi_status = 8;
+    BleStatus ble_status = 9;
+    UsbStatus usb_status = 10;
+    string serial_num = 11 [(nanopb).max_length = 16];
+    string mac_addr = 12 [(nanopb).max_length = 12];
 }
 
 message GetConfigurationResponse {
@@ -171,7 +191,6 @@ message GetConfigurationResponse {
     string sta_ssid = 7 [(nanopb).max_length = 32];
     string sta_password = 8 [(nanopb).max_length = 63];
     int32 sta_port = 9;
-
 
     string ip0 = 10 [(nanopb).max_length = 15];
     string ip1 = 11 [(nanopb).max_length = 15];
@@ -198,5 +217,9 @@ message GetClientIPListResponse {
     string ip5 = 6 [(nanopb).max_length = 15];
     string ip6 = 7 [(nanopb).max_length = 15];
     string ip7 = 8 [(nanopb).max_length = 15];
+}
+
+message GetAssignedIPResponse {
+    string ip = 1 [(nanopb).max_length = 15];
 }
 

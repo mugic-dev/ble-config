@@ -78,17 +78,6 @@
     <div id="commandDiv" style="display: none;">
         <h2>Send Commands</h2>
 
-        <!-- Set Output Mode -->
-        <!-- <h3>Set Output Mode</h3>
-        <select id="outputMode">
-            <option value="0">SERIAL_MODE</option>
-            <option value="1">WIFI_AP_MODE</option>
-            <option value="2">WIFI_CLIENT_MODE</option>
-            <option value="3">BLE_MODE</option>
-            <option value="-1">UNSPECIFIED_MODE</option>
-        </select>
-        <button onclick="sendSetOutputMode()">Send</button><br><br> -->
-
         <!-- Configure WiFi AP -->
         <h3>Configure WiFi AP</h3>
         <input type="text" id="wifiApSsid" placeholder="AP SSID">
@@ -114,7 +103,7 @@
 
         <!-- Get Configuration -->
         <h3>Get Assigned IP</h3>
-        <input type="text" id="assignedIp" placeholder="No Assigned IP">
+        <input type="text" id="assignedIp" placeholder="No Assigned IP" readonly>
         <button onclick="sendGetAssignedIP()">Check IP</button><br><br>
 
         <!-- Configure Client IP -->
@@ -142,6 +131,15 @@
             <option value="3">ASCII</option>
         </select>
         <button onclick="sendSetOutputDataFormat()">Send</button><br><br>
+
+        <!-- Set Output Mode -->
+        <h3>Set Output Mode</h3>
+        <select id="outputMode">
+            <option value="0">USB</option>
+            <option value="1">Wi-Fi</option>
+            <!-- <option value="3">BLE</option> -->
+        </select>
+        <button onclick="sendSetOutputMode()">Send</button><br><br>
 
     </div>
 
@@ -220,7 +218,7 @@
         function sendSetOutputDataFormat() {
             const outputDataFormat = parseInt(document.getElementById('outputDataFormat').value);
             const command = ConfigTaskCommand.create({
-                    setOutputDataFormat: { outputDataFormat: outputDataFormat }
+                setOutputDataFormat: { outputDataFormat: outputDataFormat }
             });
             sendCommand(command);
         }
@@ -233,15 +231,13 @@
             sendCommand(command);
         }
 
-        // function sendSetOutputMode() {
-        //     const outputDataMode = parseInt(document.getElementById('outputMode').value);
-        //     const command = ConfigTaskCommand.create({
-        //         command: {
-        //             set_output_mode: SetOutputMode.create({ output_data_mode: outputDataMode })
-        //         }
-        //     });
-        //     sendCommand(command);
-        // }
+        function sendSetOutputMode() {
+            const outputDataMode = parseInt(document.getElementById('outputMode').value);
+            const command = ConfigTaskCommand.create({
+                setOutputMode: { outputDataMode: outputDataMode }
+            });
+            sendCommand(command);
+        }
 
         function sendConfigureWifiAp() {
             const ssid = document.getElementById('wifiApSsid').value;
@@ -336,7 +332,9 @@
                 } else if (response.configureBleResponse) {
                     taskState = response.configureBleResponse.taskState;
                 } else if (response.setOutputDataFormatResponse) {
-                    taskState = response.getAssignedIpResponse.taskState;
+                    taskState = response.setOutputDataFormatResponse.taskState;
+                } else if (response.setOutputModeResponse) {
+                    taskState = response.setOutputModeResponse.taskState;
                 } else if (response.getAssignedIpResponse) {
                     if(response.getAssignedIpResponse.ip === undefined || response.getAssignedIpResponse.ip.trim() === ''){
                         return;
@@ -366,6 +364,7 @@
                     document.getElementById('clientIp7').value = response.getConfigurationResponse.ip7;
 
                     document.getElementById('outputDataFormat').value = response.getConfigurationResponse.outputDataFormat;
+                    document.getElementById('outputMode').value = response.getConfigurationResponse.outputDataMode;
                     document.getElementById('bleName').value = response.getConfigurationResponse.bleName;
                     return;
                 }
