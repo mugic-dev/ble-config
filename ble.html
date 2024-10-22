@@ -340,7 +340,6 @@
                         return;
                     }
                     document.getElementById('assignedIp').value = response.getAssignedIpResponse.ip;
-                    alert("AssignedIP: " + response.getAssignedIpResponse.ip);
                     return;
                 } else if (response.getConfigurationResponse) {
                     document.getElementById('outputFrequency').value = response.getConfigurationResponse.frequency;
