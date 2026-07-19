@@ -132,6 +132,11 @@
         </select>
         <button onclick="sendSetOutputDataFormat()">Send</button><br><br>
 
+        <!-- Set Data Prefix -->
+        <h3>Set Data Prefix</h3>
+        <input type="text" id="dataPrefix" placeholder="Data Prefix (e.g. mugicdata)" maxlength="24">
+        <button onclick="sendSetDataPrefix()">Send</button><br><br>
+
         <!-- Set Output Mode -->
         <h3>Set Output Mode</h3>
         <select id="outputMode">
@@ -140,6 +145,24 @@
             <!-- <option value="3">BLE</option> -->
         </select>
         <button onclick="sendSetOutputMode()">Send</button><br><br>
+
+        <!-- Set LED Mode -->
+        <h3>Set LED Mode</h3>
+        <select id="ledMode">
+            <option value="0">Normal</option>
+            <option value="1">Quiet Until Restart</option>
+            <option value="2">Quiet Persistent</option>
+            <!-- <option value="2">OFF</option> -->
+        </select>
+        <button onclick="sendSetLedMode()">Send</button><br><br>
+
+        <!-- Set Accel Mode -->
+        <h3>Set Acceleration Source</h3>
+        <select id="accelMode">
+            <option value="0">Linear (gravity removed)</option>
+            <option value="1">Raw (gravity included)</option>
+        </select>
+        <button onclick="sendSetAccelMode()">Send</button><br><br>
 
     </div>
 
@@ -233,6 +256,30 @@
             const outputDataMode = parseInt(document.getElementById('outputMode').value);
             const command = ConfigTaskCommand.create({
                 setOutputMode: { outputDataMode: outputDataMode }
+            });
+            sendCommand(command);
+        }
+
+        function sendSetDataPrefix() {
+            const dataPrefix = document.getElementById('dataPrefix').value;
+            const command = ConfigTaskCommand.create({
+                setDataPrefix: { dataPrefix: dataPrefix }
+            });
+            sendCommand(command);
+        }
+
+        function sendSetLedMode() {
+            const ledMode = parseInt(document.getElementById('ledMode').value);
+            const command = ConfigTaskCommand.create({
+                setLedMode: { ledMode : ledMode }
+            });
+            sendCommand(command);
+        }
+
+        function sendSetAccelMode() {
+            const accelMode = parseInt(document.getElementById('accelMode').value);
+            const command = ConfigTaskCommand.create({
+                setAccelMode: { accelMode: accelMode }
             });
             sendCommand(command);
         }
@@ -333,6 +380,12 @@
                     taskState = response.setOutputDataFormatResponse.taskState;
                 } else if (response.setOutputModeResponse) {
                     taskState = response.setOutputModeResponse.taskState;
+                } else if (response.setDataPrefixResponse) {
+                    taskState = response.setDataPrefixResponse.taskState;
+                } else if (response.setLedModeResponse) {
+                    taskState = response.setLedModeResponse.taskState;
+                } else if (response.setAccelModeResponse) {
+                    taskState = response.setAccelModeResponse.taskState;
                 } else if (response.getAssignedIpResponse) {
                     if(response.getAssignedIpResponse.ip === undefined || response.getAssignedIpResponse.ip.trim() === ''){
                         return;
@@ -362,7 +415,9 @@
 
                     document.getElementById('outputDataFormat').value = response.getConfigurationResponse.outputDataFormat;
                     document.getElementById('outputMode').value = response.getConfigurationResponse.outputDataMode;
+                    document.getElementById('accelMode').value = response.getConfigurationResponse.accelMode;
                     document.getElementById('bleName').value = response.getConfigurationResponse.bleName;
+                    document.getElementById('dataPrefix').value = response.getConfigurationResponse.dataPrefix;
                     return;
                 }
 
