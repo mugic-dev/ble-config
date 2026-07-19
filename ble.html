@@ -108,14 +108,14 @@
 
         <!-- Configure Client IP -->
         <h3>Configure Client IP</h3>
-        <input type="text" id="clientIp0" placeholder="IP 0">
-        <input type="text" id="clientIp1" placeholder="IP 1">
-        <input type="text" id="clientIp2" placeholder="IP 2">
-        <input type="text" id="clientIp3" placeholder="IP 3">
-        <input type="text" id="clientIp4" placeholder="IP 4">
-        <input type="text" id="clientIp5" placeholder="IP 5">
-        <input type="text" id="clientIp6" placeholder="IP 6">
-        <input type="text" id="clientIp7" placeholder="IP 7">
+        <input type="text" id="clientIp0" placeholder="IP 1">
+        <input type="text" id="clientIp1" placeholder="IP 2">
+        <input type="text" id="clientIp2" placeholder="IP 3">
+        <input type="text" id="clientIp3" placeholder="IP 4">
+        <input type="text" id="clientIp4" placeholder="IP 5">
+        <input type="text" id="clientIp5" placeholder="IP 6">
+        <input type="text" id="clientIp6" placeholder="IP 7">
+        <input type="text" id="clientIp7" placeholder="IP 8">
         <button onclick="sendConfigureClientIp()">Send</button><br><br>
 
         <!-- Set Output Frequency -->
@@ -176,8 +176,6 @@
                     filters: [{ namePrefix: 'mu' }],
                     optionalServices: [serviceUuid] 
                 });
-
-
 
                 gattServer = await bleDevice.gatt.connect();
                 service = await gattServer.getPrimaryService(serviceUuid); 
