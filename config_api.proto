@@ -1,6 +1,6 @@
 syntax = "proto3";
 package config_api;
-import "nanopb.proto";   
+import "nanopb.proto";
 
 //command message sent from application to device
 message ConfigTaskCommand {
@@ -15,6 +15,9 @@ message ConfigTaskCommand {
         GetConfiguration get_configuration = 8;
         ConfigureClientIP configure_client_ip = 9;
         GetAssignedIP get_assigned_ip = 10;
+        SetLEDMode set_led_mode = 11;
+        SetDataPrefix set_data_prefix = 12;
+        SetAccelMode set_accel_mode = 13;
     }
 }
 
@@ -31,6 +34,9 @@ message ConfigTaskResponse {
         GetConfigurationResponse get_configuration_response = 8;
         ConfigureClientIPResponse configure_client_ip_response = 9;
         GetAssignedIPResponse get_assigned_ip_response = 10;
+        SetLEDModeResponse set_led_mode_response = 11;
+        SetDataPrefixResponse set_data_prefix_response = 12;
+        SetAccelModeResponse set_accel_mode_response = 13;
     }
 }
 
@@ -50,7 +56,7 @@ enum OutputDataFormat {
     DATA_MIDI = 2;
     DATA_ASCII = 3;
 }
-  
+
 enum OutputDataMode {
     SERIAL_MODE = 0;
     WIFI_MODE = 1;
@@ -74,6 +80,20 @@ enum BleStatus {
     CONNECTED_BLE = 2;
 }
 
+// Which acceleration source is streamed in the 'acc' field of the data output.
+// LINEAR_ACCEL (gravity removed, BNO055 fusion output) is the default and
+// matches mugic1 behavior; RAW_ACCEL includes the ~9.8 m/s^2 gravity component.
+enum AccelMode {
+    LINEAR_ACCEL = 0;
+    RAW_ACCEL = 1;
+}
+
+enum LEDMode {
+    NORMAL_LED = 0;
+    QUIET_LED = 1;
+    ALWAYS_QUIET_LED = 2;
+}
+
 enum MaxStringLength {
     // First value must be 0 in proto3.
     UNSPECIFIED_MAX_LENGTH = 0;
@@ -82,10 +102,11 @@ enum MaxStringLength {
     SSID_MAX_STRING_LENGTH = 32;
     PASSWORD_MAX_STRING_LENGTH = 63;
     BLE_NAME_MAX_STRING_LENGTH = 10;
+    DATA_PREFIX_MAX_STRING_LENGTH = 24;
 }
 
 //
-// Command messages 
+// Command messages
 //
 
 message SetOutputDataFormat {
@@ -127,6 +148,10 @@ message ConfigureBle {
     string ble_name = 1 [(nanopb).max_length = 10];
 }
 
+message SetDataPrefix {
+    string data_prefix = 1 [(nanopb).max_length = 24];
+}
+
 message GetClientIPList {}
 
 message GetDiagnostics {}
@@ -135,6 +160,13 @@ message GetConfiguration {}
 
 message GetAssignedIP {}
 
+message SetLEDMode {
+  LEDMode led_mode = 1;
+}
+
+message SetAccelMode {
+  AccelMode accel_mode = 1;
+}
 
 //
 // Response messages
@@ -164,6 +196,10 @@ message ConfigureBleResponse {
     TaskState task_state = 1;
 }
 
+message SetDataPrefixResponse {
+    TaskState task_state = 1;
+}
+
 message GetDiagnosticsResponse {
     uint32 battery_soc = 1;
     float battery_volt = 2;
@@ -177,6 +213,7 @@ message GetDiagnosticsResponse {
     UsbStatus usb_status = 10;
     string serial_num = 11 [(nanopb).max_length = 16];
     string mac_addr = 12 [(nanopb).max_length = 12];
+    LEDMode led_mode = 13;
 }
 
 message GetConfigurationResponse {
@@ -201,7 +238,11 @@ message GetConfigurationResponse {
     string ip6 = 16 [(nanopb).max_length = 15];
     string ip7 = 17 [(nanopb).max_length = 15];
 
-    string ble_name = 18 [(nanopb).max_length = 10]; 
+    string ble_name = 18 [(nanopb).max_length = 10];
+
+    string data_prefix = 19 [(nanopb).max_length = 24];
+
+    AccelMode accel_mode = 20;
 }
 
 message ConfigureClientIPResponse {
@@ -223,3 +264,10 @@ message GetAssignedIPResponse {
     string ip = 1 [(nanopb).max_length = 15];
 }
 
+message SetLEDModeResponse {
+    TaskState task_state = 1;
+}
+
+message SetAccelModeResponse {
+    TaskState task_state = 1;
+}
