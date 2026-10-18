@@ -18,6 +18,7 @@ message ConfigTaskCommand {
         SetLEDMode set_led_mode = 11;
         SetDataPrefix set_data_prefix = 12;
         SetAccelMode set_accel_mode = 13;
+        SetBleTxPower set_ble_tx_power = 14;
     }
 }
 
@@ -37,6 +38,7 @@ message ConfigTaskResponse {
         SetLEDModeResponse set_led_mode_response = 11;
         SetDataPrefixResponse set_data_prefix_response = 12;
         SetAccelModeResponse set_accel_mode_response = 13;
+        SetBleTxPowerResponse set_ble_tx_power_response = 14;
     }
 }
 
@@ -168,6 +170,13 @@ message SetAccelMode {
   AccelMode accel_mode = 1;
 }
 
+// BLE radio TX power in dBm, applied immediately and persisted. Valid range is
+// -24..20; the device uses the nearest supported level at or below the value
+// (-24, -21, ..., 15, 18, 20). Lower saves battery, higher gives more range.
+message SetBleTxPower {
+  sint32 tx_power_dbm = 1;
+}
+
 //
 // Response messages
 //
@@ -243,6 +252,9 @@ message GetConfigurationResponse {
     string data_prefix = 19 [(nanopb).max_length = 24];
 
     AccelMode accel_mode = 20;
+
+    // Always sent by firmware >= 2.2.1 (even 0 dBm); absent on older firmware.
+    sint32 ble_tx_power_dbm = 21 [(nanopb).proto3 = false];
 }
 
 message ConfigureClientIPResponse {
@@ -269,5 +281,9 @@ message SetLEDModeResponse {
 }
 
 message SetAccelModeResponse {
+    TaskState task_state = 1;
+}
+
+message SetBleTxPowerResponse {
     TaskState task_state = 1;
 }

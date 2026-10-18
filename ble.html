@@ -75,7 +75,7 @@
                                             <li>An &quot;Error&quot; popup with an explanation will indicate that the change was not applied to MUGIC®.</li>
                                         </ul>
                                     </div>
-                                    <p class="max-width-medium" style="font-size:0.8rem;opacity:0.6;margin-top:2rem;">Last updated: October 17, 2026 11:47 PDT</p>
+                                    <p class="max-width-medium" style="font-size:0.8rem;opacity:0.6;margin-top:2rem;">Last updated: October 18, 2026 10:46 PDT</p>
                                 </div>
                                 <div class="text-content_component">
                                 <h1 id="w-node-_4212c86f-5976-7aa4-6191-40be271fe46a-8506c008" class="heading-style-h3">Bluetooth Configurator</h1>
@@ -170,6 +170,30 @@
             <option value="1">Raw (gravity included)</option>
         </select>
         <button onclick="sendSetAccelMode()">Send</button><br><br>
+
+        <!-- Set BLE TX Power (firmware 2.2.1+; shown once the device reports it) -->
+        <div id="bleTxPowerSection" style="display: none;">
+        <h3>Set Bluetooth Power</h3>
+        <select id="bleTxPower">
+            <option value="20">+20 dBm (max range)</option>
+            <option value="18">+18 dBm</option>
+            <option value="15">+15 dBm</option>
+            <option value="12">+12 dBm</option>
+            <option value="9">+9 dBm</option>
+            <option value="6">+6 dBm</option>
+            <option value="3">+3 dBm</option>
+            <option value="0">0 dBm</option>
+            <option value="-3">-3 dBm</option>
+            <option value="-6">-6 dBm</option>
+            <option value="-9">-9 dBm</option>
+            <option value="-12">-12 dBm</option>
+            <option value="-15">-15 dBm</option>
+            <option value="-18">-18 dBm</option>
+            <option value="-21">-21 dBm</option>
+            <option value="-24">-24 dBm (default, best battery)</option>
+        </select>
+        <button onclick="sendSetBleTxPower()">Send</button><br><br>
+        </div>
 
     </div>
 
@@ -291,6 +315,14 @@
             sendCommand(command);
         }
 
+        function sendSetBleTxPower() {
+            const txPowerDbm = parseInt(document.getElementById('bleTxPower').value);
+            const command = ConfigTaskCommand.create({
+                setBleTxPower: { txPowerDbm: txPowerDbm }
+            });
+            sendCommand(command);
+        }
+
         function sendConfigureWifiAp() {
             const ssid = document.getElementById('wifiApSsid').value;
             const password = document.getElementById('wifiApPassword').value;
@@ -393,6 +425,8 @@
                     taskState = response.setLedModeResponse.taskState;
                 } else if (response.setAccelModeResponse) {
                     taskState = response.setAccelModeResponse.taskState;
+                } else if (response.setBleTxPowerResponse) {
+                    taskState = response.setBleTxPowerResponse.taskState;
                 } else if (response.getAssignedIpResponse) {
                     if(response.getAssignedIpResponse.ip === undefined || response.getAssignedIpResponse.ip.trim() === ''){
                         return;
@@ -423,6 +457,11 @@
                     document.getElementById('outputDataFormat').value = response.getConfigurationResponse.outputDataFormat;
                     document.getElementById('outputMode').value = response.getConfigurationResponse.outputDataMode;
                     document.getElementById('accelMode').value = response.getConfigurationResponse.accelMode;
+                    // Only firmware 2.2.1+ sends bleTxPowerDbm (always, even 0 dBm)
+                    if (Object.prototype.hasOwnProperty.call(response.getConfigurationResponse, 'bleTxPowerDbm')) {
+                        document.getElementById('bleTxPower').value = response.getConfigurationResponse.bleTxPowerDbm;
+                        document.getElementById('bleTxPowerSection').style.display = '';
+                    }
                     document.getElementById('bleName').value = response.getConfigurationResponse.bleName;
                     document.getElementById('dataPrefix').value = response.getConfigurationResponse.dataPrefix;
                     return;
