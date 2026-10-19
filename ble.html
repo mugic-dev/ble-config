@@ -175,14 +175,14 @@
         <div id="bleTxPowerSection" style="display: none;">
         <h3>Set Bluetooth Power</h3>
         <select id="bleTxPower">
-            <option value="20">+20 dBm (max range)</option>
+            <option value="20">+20 dBm: max range, normal battery</option>
             <option value="18">+18 dBm</option>
             <option value="15">+15 dBm</option>
             <option value="12">+12 dBm</option>
             <option value="9">+9 dBm</option>
             <option value="6">+6 dBm</option>
             <option value="3">+3 dBm</option>
-            <option value="0">0 dBm</option>
+            <option value="0">0 dBm: medium range, longer battery</option>
             <option value="-3">-3 dBm</option>
             <option value="-6">-6 dBm</option>
             <option value="-9">-9 dBm</option>
@@ -190,7 +190,7 @@
             <option value="-15">-15 dBm</option>
             <option value="-18">-18 dBm</option>
             <option value="-21">-21 dBm</option>
-            <option value="-24">-24 dBm (default, best battery)</option>
+            <option value="-24">-24 dBm: (default) min range, longest battery</option>
         </select>
         <button onclick="sendSetBleTxPower()">Send</button><br><br>
         </div>
