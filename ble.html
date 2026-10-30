@@ -105,9 +105,10 @@
 
         <!-- Configure WiFi Client -->
         <h3>Configure WiFi Client</h3>
-        <input type="text" id="wifiClientSsid" placeholder="Wifi SSID" list="scannedSsids">
-        <datalist id="scannedSsids"></datalist>
+        <input type="text" id="wifiClientSsid" placeholder="Wifi SSID">
         <button id="scanWifiBtn" style="display: none;" onclick="sendScanWifi()">Scan</button>
+        <select id="scannedSsids" style="display: none;"
+                onchange="if (this.value) document.getElementById('wifiClientSsid').value = this.value"></select>
         <input type="text" id="wifiClientPassword" placeholder="Wifi Password">
         <input type="number" id="wifiClientPort" placeholder="Port">
         <button onclick="sendConfigureWifiClient()">Send</button><br><br>
@@ -462,13 +463,16 @@
                     button.textContent = 'Scan';
                     const networks = response.scanWifiResponse.networks || [];
                     const list = document.getElementById('scannedSsids');
-                    list.innerHTML = '';
+                    list.innerHTML = '<option value="">Choose a network…</option>';
                     for (const n of networks) {
                         const option = document.createElement('option');
                         option.value = n.ssid;
-                        option.label = n.rssi + ' dBm' + (n.auth === 2 ? ' (enterprise, not supported)' : '');
+                        option.textContent = n.ssid + ' (' + n.rssi + ' dBm'
+                            + (n.auth === 2 ? ', enterprise, not supported' : '') + ')';
+                        option.disabled = n.auth === 2;
                         list.appendChild(option);
                     }
+                    list.style.display = networks.length ? '' : 'none';
                     if (response.scanWifiResponse.taskState) {
                         alert('Scan failed (see the device log)');
                     } else {
