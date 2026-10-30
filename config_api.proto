@@ -19,6 +19,8 @@ message ConfigTaskCommand {
         SetDataPrefix set_data_prefix = 12;
         SetAccelMode set_accel_mode = 13;
         SetBleTxPower set_ble_tx_power = 14;
+        SetWifiMode set_wifi_mode = 15;
+        ScanWifi scan_wifi = 16;
     }
 }
 
@@ -39,6 +41,8 @@ message ConfigTaskResponse {
         SetDataPrefixResponse set_data_prefix_response = 12;
         SetAccelModeResponse set_accel_mode_response = 13;
         SetBleTxPowerResponse set_ble_tx_power_response = 14;
+        SetWifiModeResponse set_wifi_mode_response = 15;
+        ScanWifiResponse scan_wifi_response = 16;
     }
 }
 
@@ -74,6 +78,29 @@ enum WifiStatus {
     NO_WIFI = 0;
     STA_WIFI = 1;
     AP_WIFI = 2;
+}
+
+// Saved Wi-Fi mode used at boot (NVS "wifi_mode"); WifiStatus is the live state,
+// which differs after the client-mode fallback to AP.
+enum WifiMode {
+    WIFI_AP_MODE = 0;
+    WIFI_CLIENT_MODE = 1;
+}
+
+// Why client mode last failed to join; kept until the next successful join.
+enum StaError {
+    STA_ERROR_NONE = 0;
+    STA_WRONG_PASSWORD = 1;
+    STA_NO_AP_FOUND = 2;     // not in range, or a 5 GHz network
+    STA_CONNECT_FAILED = 3;
+    STA_NO_IP = 4;           // joined, but no address from DHCP yet
+}
+
+enum WifiAuth {
+    AUTH_OPEN = 0;
+    AUTH_PERSONAL = 1;       // WPA/WPA2/WPA3 with a password
+    AUTH_ENTERPRISE = 2;     // 802.1X (eduroam...), not supported
+    AUTH_OTHER = 3;          // WEP and anything else
 }
 
 enum BleStatus {
@@ -177,6 +204,18 @@ message SetBleTxPower {
   sint32 tx_power_dbm = 1;
 }
 
+// Saves the Wi-Fi mode, like a long press on Mode, and restarts to apply it,
+// except in BLE output mode (Wi-Fi is off there; it applies when Wi-Fi is back).
+message SetWifiMode {
+  WifiMode wifi_mode = 1;
+}
+
+// Scans the 2.4 GHz networks MUGIC can see. If ssid is set and seen, that
+// network is listed first.
+message ScanWifi {
+  string ssid = 1 [(nanopb).max_length = 32];
+}
+
 //
 // Response messages
 //
@@ -223,6 +262,7 @@ message GetDiagnosticsResponse {
     string serial_num = 11 [(nanopb).max_length = 16];
     string mac_addr = 12 [(nanopb).max_length = 12];
     LEDMode led_mode = 13;
+    StaError sta_error = 14;
 }
 
 message GetConfigurationResponse {
@@ -255,6 +295,11 @@ message GetConfigurationResponse {
 
     // Always sent by firmware >= 2.2.1 (even 0 dBm); absent on older firmware.
     sint32 ble_tx_power_dbm = 21 [(nanopb).proto3 = false];
+
+    // Firmware >= 2.3.0; absent on older firmware.
+    string firmware_version = 22 [(nanopb).max_length = 31];  // e.g. "2.3.0"
+    string firmware_build = 23 [(nanopb).max_length = 39];    // e.g. "2.3.0 (abc1234) [0 commits]"
+    WifiMode wifi_mode = 24 [(nanopb).proto3 = false];
 }
 
 message ConfigureClientIPResponse {
@@ -286,4 +331,21 @@ message SetAccelModeResponse {
 
 message SetBleTxPowerResponse {
     TaskState task_state = 1;
+}
+
+message SetWifiModeResponse {
+    TaskState task_state = 1;
+}
+
+message WifiNetwork {
+    string ssid = 1 [(nanopb).max_length = 32];
+    sint32 rssi = 2;  // dBm
+    WifiAuth auth = 3;
+    uint32 channel = 4;
+}
+
+// Strongest first, one entry per SSID, trimmed to fit one BLE notification.
+message ScanWifiResponse {
+    TaskState task_state = 1;
+    repeated WifiNetwork networks = 2 [(nanopb).max_count = 8];
 }
