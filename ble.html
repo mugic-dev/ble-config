@@ -75,7 +75,7 @@
                                             <li>An &quot;Error&quot; popup with an explanation will indicate that the change was not applied to MUGIC®.</li>
                                         </ul>
                                     </div>
-                                    <p class="max-width-medium" style="font-size:0.8rem;opacity:0.6;margin-top:2rem;">Last updated: October 19, 2026 09:19 PDT</p>
+                                    <p class="max-width-medium" style="font-size:0.8rem;opacity:0.6;margin-top:2rem;">Last updated: October 30, 2026</p>
                                 </div>
                                 <div class="text-content_component">
                                 <h1 id="w-node-_4212c86f-5976-7aa4-6191-40be271fe46a-8506c008" class="heading-style-h3">Connect via Bluetooth</h1>
@@ -84,6 +84,17 @@
 
     <div id="commandDiv" style="display: none;">
         <h2>Send Commands</h2>
+        <p id="firmwareVersion" style="display: none;"></p>
+
+        <!-- Wi-Fi mode (firmware 2.3.0+), same as a long press on Mode -->
+        <div id="wifiModeSection" style="display: none;">
+        <h3>Wi-Fi Mode</h3>
+        <select id="wifiMode">
+            <option value="0">AP (MUGIC's own network)</option>
+            <option value="1">Client (join a network)</option>
+        </select>
+        <button onclick="sendSetWifiMode()">Send</button> (restarts the device)<br><br>
+        </div>
 
         <!-- Configure WiFi AP -->
         <h3>Configure WiFi AP</h3>
@@ -94,7 +105,9 @@
 
         <!-- Configure WiFi Client -->
         <h3>Configure WiFi Client</h3>
-        <input type="text" id="wifiClientSsid" placeholder="Wifi SSID">
+        <input type="text" id="wifiClientSsid" placeholder="Wifi SSID" list="scannedSsids">
+        <datalist id="scannedSsids"></datalist>
+        <button id="scanWifiBtn" style="display: none;" onclick="sendScanWifi()">Scan</button>
         <input type="text" id="wifiClientPassword" placeholder="Wifi Password">
         <input type="number" id="wifiClientPort" placeholder="Port">
         <button onclick="sendConfigureWifiClient()">Send</button><br><br>
@@ -333,6 +346,20 @@
             sendCommand(command);
         }
 
+        function sendSetWifiMode() {
+            const wifiMode = parseInt(document.getElementById('wifiMode').value);
+            sendCommand(ConfigTaskCommand.create({ setWifiMode: { wifiMode: wifiMode } }));
+        }
+
+        function sendScanWifi() {
+            const ssid = document.getElementById('wifiClientSsid').value;
+            // A scan takes several seconds (longer with BLE connected); one at a time.
+            const button = document.getElementById('scanWifiBtn');
+            button.disabled = true;
+            button.textContent = 'Scanning…';
+            sendCommand(ConfigTaskCommand.create({ scanWifi: { ssid: ssid } }));
+        }
+
         function sendConfigureWifiClient() {
             const ssid = document.getElementById('wifiClientSsid').value;
             const password = document.getElementById('wifiClientPassword').value;
@@ -427,6 +454,28 @@
                     taskState = response.setAccelModeResponse.taskState;
                 } else if (response.setBleTxPowerResponse) {
                     taskState = response.setBleTxPowerResponse.taskState;
+                } else if (response.setWifiModeResponse) {
+                    taskState = response.setWifiModeResponse.taskState;
+                } else if (response.scanWifiResponse) {
+                    const button = document.getElementById('scanWifiBtn');
+                    button.disabled = false;
+                    button.textContent = 'Scan';
+                    const networks = response.scanWifiResponse.networks || [];
+                    const list = document.getElementById('scannedSsids');
+                    list.innerHTML = '';
+                    for (const n of networks) {
+                        const option = document.createElement('option');
+                        option.value = n.ssid;
+                        option.label = n.rssi + ' dBm' + (n.auth === 2 ? ' (enterprise, not supported)' : '');
+                        list.appendChild(option);
+                    }
+                    if (response.scanWifiResponse.taskState) {
+                        alert('Scan failed (see the device log)');
+                    } else {
+                        alert(networks.length ? 'Found: ' + networks.map(n => n.ssid).join(', ')
+                                              : 'No 2.4 GHz network found');
+                    }
+                    return;
                 } else if (response.getAssignedIpResponse) {
                     if(response.getAssignedIpResponse.ip === undefined || response.getAssignedIpResponse.ip.trim() === ''){
                         return;
@@ -464,12 +513,27 @@
                     }
                     document.getElementById('bleName').value = response.getConfigurationResponse.bleName;
                     document.getElementById('dataPrefix').value = response.getConfigurationResponse.dataPrefix;
+                    // Firmware 2.3.0+ reports its version, Wi-Fi mode and supports scanning
+                    if (response.getConfigurationResponse.firmwareVersion) {
+                        const version = document.getElementById('firmwareVersion');
+                        version.textContent = 'Firmware ' + response.getConfigurationResponse.firmwareVersion
+                            + ' (build ' + response.getConfigurationResponse.firmwareBuild + ')';
+                        version.style.display = '';
+                        document.getElementById('scanWifiBtn').style.display = '';
+                    }
+                    if (Object.prototype.hasOwnProperty.call(response.getConfigurationResponse, 'wifiMode')) {
+                        document.getElementById('wifiMode').value = response.getConfigurationResponse.wifiMode;
+                        document.getElementById('wifiModeSection').style.display = '';
+                    }
                     return;
                 }
 
             // Check the task state and display appropriate message
             if (taskState === 0) { // Assuming 0 is TASK_SUCCESS
                 alert("Configuration Accepted!");
+                // Refresh the fields: e.g. each output mode has its own format, so the
+                // Format menu must follow an output mode change
+                sendCommand(ConfigTaskCommand.create({ getConfiguration: {} }));
             } else {
                 alert("Error!");
             }
