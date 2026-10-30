@@ -106,11 +106,8 @@
         <!-- Configure WiFi Client -->
         <h3>Configure WiFi Client</h3>
         <input type="text" id="wifiClientSsid" placeholder="Wifi SSID">
+        <select id="scannedSsids" style="display: none;" onchange="chooseScannedSsid()"></select>
         <button id="scanWifiBtn" style="display: none;" onclick="sendScanWifi()">Scan</button>
-        <div id="scannedSsidsRow" style="display: none; margin: 4px 0;">
-        <select id="scannedSsids"
-                onchange="if (this.value) document.getElementById('wifiClientSsid').value = this.value"></select>
-        </div>
         <input type="text" id="wifiClientPassword" placeholder="Wifi Password">
         <input type="number" id="wifiClientPort" placeholder="Port">
         <button onclick="sendConfigureWifiClient()">Send</button><br><br>
@@ -363,6 +360,42 @@
             sendCommand(ConfigTaskCommand.create({ scanWifi: { ssid: ssid } }));
         }
 
+        // After a scan the SSID field becomes a menu of the networks found (always
+        // the full list); "Other" brings the field back to type a name.
+        function showScannedSsids(networks) {
+            const field = document.getElementById('wifiClientSsid');
+            const list = document.getElementById('scannedSsids');
+            list.innerHTML = '';
+            const add = (value, text, disabled) => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = text;
+                option.disabled = !!disabled;
+                list.appendChild(option);
+            };
+            if (field.value && !networks.some(n => n.ssid === field.value)) {
+                add(field.value, field.value + ' (not found)');
+            }
+            for (const n of networks) {
+                add(n.ssid, n.ssid + ' (' + n.rssi + ' dBm'
+                    + (n.auth === 2 ? ', enterprise, not supported' : '') + ')', n.auth === 2);
+            }
+            add('', 'Other (type a name)…');
+            list.value = field.value;
+            if (list.selectedIndex < 0) list.selectedIndex = 0;
+            chooseScannedSsid();
+        }
+
+        function chooseScannedSsid() {
+            const field = document.getElementById('wifiClientSsid');
+            const list = document.getElementById('scannedSsids');
+            const other = list.value === '';
+            if (!other) field.value = list.value;
+            list.style.display = other ? 'none' : '';
+            field.style.display = other ? '' : 'none';
+            if (other) field.focus();
+        }
+
         function sendConfigureWifiClient() {
             const ssid = document.getElementById('wifiClientSsid').value;
             const password = document.getElementById('wifiClientPassword').value;
@@ -464,17 +497,7 @@
                     button.disabled = false;
                     button.textContent = 'Scan';
                     const networks = response.scanWifiResponse.networks || [];
-                    const list = document.getElementById('scannedSsids');
-                    list.innerHTML = '<option value="">Choose a network…</option>';
-                    for (const n of networks) {
-                        const option = document.createElement('option');
-                        option.value = n.ssid;
-                        option.textContent = n.ssid + ' (' + n.rssi + ' dBm'
-                            + (n.auth === 2 ? ', enterprise, not supported' : '') + ')';
-                        option.disabled = n.auth === 2;
-                        list.appendChild(option);
-                    }
-                    document.getElementById('scannedSsidsRow').style.display = networks.length ? '' : 'none';
+                    if (networks.length) showScannedSsids(networks);
                     if (response.scanWifiResponse.taskState) {
                         alert('Scan failed (see the device log)');
                     } else {
@@ -497,6 +520,10 @@
                     document.getElementById('wifiApPort').value = response.getConfigurationResponse.apPort;
                     
                     document.getElementById('wifiClientSsid').value = response.getConfigurationResponse.staSsid;
+                    const ssidMenu = document.getElementById('scannedSsids');
+                    if ([...ssidMenu.options].some(o => o.value && o.value === response.getConfigurationResponse.staSsid)) {
+                        ssidMenu.value = response.getConfigurationResponse.staSsid;
+                    }
                     document.getElementById('wifiClientPassword').value = response.getConfigurationResponse.staPassword;
                     document.getElementById('wifiClientPort').value = response.getConfigurationResponse.staPort;
                     
