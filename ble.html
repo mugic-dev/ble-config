@@ -107,8 +107,10 @@
         <h3>Configure WiFi Client</h3>
         <input type="text" id="wifiClientSsid" placeholder="Wifi SSID">
         <button id="scanWifiBtn" style="display: none;" onclick="sendScanWifi()">Scan</button>
-        <select id="scannedSsids" style="display: none;"
+        <div id="scannedSsidsRow" style="display: none; margin: 4px 0;">
+        <select id="scannedSsids"
                 onchange="if (this.value) document.getElementById('wifiClientSsid').value = this.value"></select>
+        </div>
         <input type="text" id="wifiClientPassword" placeholder="Wifi Password">
         <input type="number" id="wifiClientPort" placeholder="Port">
         <button onclick="sendConfigureWifiClient()">Send</button><br><br>
@@ -472,7 +474,7 @@
                         option.disabled = n.auth === 2;
                         list.appendChild(option);
                     }
-                    list.style.display = networks.length ? '' : 'none';
+                    document.getElementById('scannedSsidsRow').style.display = networks.length ? '' : 'none';
                     if (response.scanWifiResponse.taskState) {
                         alert('Scan failed (see the device log)');
                     } else {
